@@ -7,6 +7,6 @@
   --contact-section-height: calc(100vh - var(--footer-height));
 }
 
-html {
+html, body {
   font-family: var(--font-poppins), sans-serif;
 }

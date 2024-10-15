@@ -12,6 +12,9 @@ module.exports = {
         foreground: "var(--foreground)",
         buttonColor: "var(--button-color)",
       },
+      fontFamily: {
+        poppins: ['var(--font-poppins)'],
+      },
     },
   },
   plugins: [],

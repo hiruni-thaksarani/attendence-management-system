@@ -5,8 +5,10 @@ const getContractInstance = async () => {
   if (typeof window.ethereum !== 'undefined') {
     await window.ethereum.request({ method: 'eth_requestAccounts' });
     const web3 = new Web3(window.ethereum);
-    const contractAddress = '0xb1842bae697a346a80dc6ca8b670b00d1030999e';
-    return new web3.eth.Contract(pocABI, contractAddress);
+    const contractAddress = '0x47956b19D42015E85d209895D723495a35f2fEEB';
+    const acc = new web3.eth.Contract(pocABI, contractAddress);
+    console.log('acc',acc.defaultChain);
+    return acc;
   } else {
     throw new Error("Ethereum object not found, install MetaMask.");
   }

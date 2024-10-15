@@ -8,12 +8,12 @@ const Dialog = ({ isOpen, onClose, children, title }) => {
       <div className="bg-white rounded-lg p-6 w-full max-w-md relative">
         <button 
           onClick={onClose} 
-          className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+          className="absolute top-5 right-5 text-gray-500 hover:text-gray-700"
           aria-label="Close"
         >
           ✕
         </button>
-        <h2 className="text-2xl font-bold mb-4">{title}</h2>
+        <h2 className="text-xl font-medium	mb-4">{title}</h2>
         {children}
       </div>
     </div>

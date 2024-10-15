@@ -105,8 +105,10 @@ const EmployeeManagementDashboard = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">EMPLOYEE MANAGEMENT DASHBOARD</h1>
+    <div className="p-10 bg-indigo-50 h-screen">
+
+    <div className="container mx-auto px-4 py-8 bg-white  h-screen">
+      <h1 className="text-3xl font-semibold mb-6">EMPLOYEE MANAGEMENT DASHBOARD</h1>
       
       <div className="mb-6 flex justify-end">
         <Button onClick={() => setIsAddEmployeePopupOpen(true)}>
@@ -144,6 +146,7 @@ const EmployeeManagementDashboard = () => {
         onClose={() => setIsAddEmployeePopupOpen(false)}
         onAdd={handleAddEmployee}
       />
+    </div>
     </div>
   );
 };
