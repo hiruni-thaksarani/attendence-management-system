@@ -1,6 +1,7 @@
 import { Poppins } from 'next/font/google'
 import localFont from "next/font/local";
 import "./globals.css";
+import ToastProvider from './components/ToastProvider';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -29,8 +30,10 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body
         className={`${poppins.variable} ${geistSans.variable} ${geistMono.variable} font-poppins antialiased`}
-      >
-        {children}
+      >  
+      <ToastProvider>
+      {children}
+      </ToastProvider>
       </body>
     </html>
   );

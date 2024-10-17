@@ -1,12 +1,26 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Web3 from 'web3';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const LoginPage = () => {
+  const [web3, setWeb3] = useState(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectedAddress, setConnectedAddress] = useState('');
-  const [error, setError] = useState('');
+  const [nonce, setNonce] = useState(null);
+  const [nonceToken, setNonceToken] = useState(null);
   const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && typeof window.ethereum !== 'undefined') {
+      const web3Instance = new Web3(window.ethereum);
+      setWeb3(web3Instance);
+    } else {
+      toast.error("Please install MetaMask!");
+    }
+  }, []);
 
   const truncateAddress = (address) => {
     return address.substring(0, 6) + "..." + address.substring(address.length - 4);
@@ -14,72 +28,88 @@ const LoginPage = () => {
 
   const connectWallet = async () => {
     setIsConnecting(true);
-    setError('');
 
-    if (window.ethereum) {
+    if (web3) {
       try {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const accounts = await web3.eth.requestAccounts();
         const address = accounts[0];
         console.log('Connected to MetaMask');
-        router.push(`/dashboard/owner`);
         setConnectedAddress(address);
         
-        await getUserTypeAndRedirect(address);
+        // Fetch nonce and token from backend
+        const response = await fetch('http://localhost:4000/auth/generate-nonce', {
+          method: 'POST',
+        });
+        const data = await response.json();
+        setNonce(data.nonce);
+        setNonceToken(data.token);
+
+        await signMessage(address, data.nonce, data.token);
       } catch (error) {
         console.error('Failed to connect wallet:', error);
-        setError('Failed to connect wallet. Please try again.');
+        toast.error('Failed to connect wallet. Please try again.');
       }
     } else {
-      console.error('MetaMask not detected');
-      setError('Please install MetaMask to connect your wallet.');
+      console.error('Web3 not initialized');
+      toast.error('Please install MetaMask to connect your wallet.');
     }
     setIsConnecting(false);
   };
 
-  const getUserTypeAndRedirect = async (address) => {
+  const signMessage = async (address, nonce, token) => {
     try {
-      const contract = await getContractInstance();
-      const [user, org] = await contract.methods.getUserByAddress(address).call();
+      const signature = await web3.eth.personal.sign(`Nonce: ${nonce}`, address, '');
 
-      const USER_ROLES = {
-        '0': 'employee',
-        '1': 'admin',
-        '2': 'owner'
-      };
-
-      const userType = USER_ROLES[user.role];
-      if (!userType) throw new Error('Invalid user role');
-
-      router.push(`/dashboard/owner`);
-    } catch (err) {
-      console.error(err);
+      // Send signature to backend for verification
+      const response = await fetch('http://localhost:4000/auth/verify-signature', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nonce,
+          signature,
+          address,
+          token,
+        }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        console.log('JWT Token:', data.token);
+        // Store the JWT token in localStorage or a secure cookie
+        localStorage.setItem('jwtToken', data.token);
+        // toast.success('Login successful!');
+        router.push(`/dashboard/owner`);
+      } else {
+        throw new Error(data.message || "Signature verification failed");
+      }
+    } catch (error) {
+      console.error('Error signing message', error);
+      toast.error("Login failed.Connect to a valid account.");
     }
   };
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-white">
-      <div className="px-8 py-6 mt-4 text-left bg-white shadow-lg w-[500px] bg-indigo-50 h-96">
-        <h3 className="text-2xl font-bold text-center">Login</h3>
+      <div className="px-8 py-10 text-left shadow-md w-[550px] bg-indigo-50 rounded-xl">
+        <h3 className="text-2xl font-semibold text-center">Login</h3>
         <div className="mt-4 text-center">
           <p>Lorem ipsum, dolor sit amet consectetur adipisicing elit. Veritatis illo ullam officia necessitatibus </p>
         </div>
 
-        {/* Center the button below the blue box */}
         <div className="flex justify-center mt-52">
           <button
             onClick={connectWallet}
             disabled={isConnecting}
             className={`px-6 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-900 ${isConnecting ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            {isConnecting ? 'Connecting...' : connectedAddress ? 'Connected' : 'Connect Wallet'}
+            {isConnecting ? 'Connecting...' : connectedAddress ? `Connected: ${truncateAddress(connectedAddress)}` : 'Connect Wallet'}
           </button>
         </div>
-
-        {error && <p className="mt-4 text-xs text-red-500 text-center">{error}</p>}
       </div>
+      <ToastContainer position="top-right" autoClose={5000} hideProgressBar={false} newestOnTop={false} closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
     </div>
   );
 };
 
 export default LoginPage;
-

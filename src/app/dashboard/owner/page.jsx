@@ -4,6 +4,9 @@ import axios from "axios";
 import Button from "src/app/components/Button";
 import AddOrganizationPopup from "src/app/components/AddOrganizationPopup";
 import AddAdminPopup from "src/app/components/AddAdminPopup";
+import withAuth from "src/app/auth/withAuth";
+import { useRouter } from 'next/navigation';
+import { Loader2, LogOut } from 'lucide-react';
 
 const OrganizationManagementDashboard = () => {
   const [organizations, setOrganizations] = useState([]);
@@ -11,6 +14,17 @@ const OrganizationManagementDashboard = () => {
   const [isAddAdminPopupOpen, setIsAddAdminPopupOpen] = useState(false);
   const [selectedOrg, setSelectedOrg] = useState(null);
   const [actionMenuOpenIndex, setActionMenuOpenIndex] = useState(null);
+  const [loading, setLoading] = useState(true); // Add loading state to prevent flash
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem("jwtToken");
+    if (!token) {
+      router.replace("/po"); // Use replace to prevent adding to history stack
+    } else {
+      setLoading(false); // Allow rendering when authenticated
+    }
+  }, [router]);
 
   useEffect(() => {
     handleFetchOrganizations();
@@ -27,31 +41,23 @@ const OrganizationManagementDashboard = () => {
 
   const handleAddOrganization = async (newOrg) => {
     try {
-      const response = await axios.post("http://localhost:4000/organizations", {
+      setOrganizations(prevOrgs => [...prevOrgs, {
         name: newOrg.name,
-        contactNumber: newOrg.contact,
         address: newOrg.address,
+        contactNumber: newOrg.contact,
         registrationNumber: newOrg.registration,
-      });
-      setOrganizations([...organizations, response.data]);
+        id: newOrg.id
+      }]);
     } catch (error) {
       console.error("Failed to add organization:", error);
     }
-  };
+  }
 
   const handleAddAdmin = async (newAdmin) => {
     try {
-      const response = await axios.post(
-        "http://localhost:4000/user/admin",
-        newAdmin
-      );
-      console.log("New admin added:", response.data);
-      // Optionally, you can update the organizations state or refetch organizations
-      handleFetchOrganizations();
-      setIsAddAdminPopupOpen(false);
-      setActionMenuOpenIndex(null);
+      setOrganizations([...organizations, newOrg]);
     } catch (error) {
-      console.error("Failed to add admin:", error);
+      console.error("Failed to add organization:", error);
     }
   };
 
@@ -60,15 +66,26 @@ const OrganizationManagementDashboard = () => {
     setSelectedOrg(org);
   };
 
+  const handleLogout = () => {
+    localStorage.clear(); 
+    router.replace("/po");
+  };
+
   return (
     <div className="p-10 bg-indigo-50 h-screen">
-      <div className="container mx-auto bg-white h-screen p-10">
-        <h1 className="text-2xl font-semibold mb-6">
-          ORGANIZATION MANAGEMENT DASHBOARD
-        </h1>
+      <div className="bg-white h-screen p-10 relative">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-semibold ml-5">
+            ORGANIZATION MANAGEMENT DASHBOARD
+          </h1>
+          <Button onClick={handleLogout} className="flex items-center">
+            <LogOut className="w-4 h-4 mr-2" />
+            Logout
+          </Button>
+        </div>
 
         <div className="mb-6 flex justify-between items-center">
-          <h2 className="text-xl font-semibold">Organizations</h2>
+          <h2 className="text-xl font-semibold ml-5">Organizations</h2>
           <Button onClick={() => setIsAddOrgPopupOpen(true)}>
             ADD NEW ORGANIZATION
           </Button>
@@ -145,3 +162,4 @@ const OrganizationManagementDashboard = () => {
 };
 
 export default OrganizationManagementDashboard;
+

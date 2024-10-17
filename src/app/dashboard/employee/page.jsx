@@ -1,41 +1,68 @@
-import React from "react";
+'use client';
+import React, { useState, useEffect } from "react";
+import axios from 'axios';
 import AttendanceMarker from "src/app/components/AttendanceMarker";
 import AttendanceVerificationTable from "src/app/components/AttendanceVerificationTable";
+import { useRouter } from "next/navigation";
+import { Loader2, LogOut } from 'lucide-react';
+import Button from "src/app/components/Button";
 
-const EmployeeDashboard = () => {
-  const attendanceData = [
-    { date: "2024/05/16", currentTime: "07:55 am", status: "unmarked" },
-    { date: "2024/05/15", currentTime: "07:55 am", status: "on-time" },
-    { date: "2024/05/14", currentTime: "07:55 am", status: "late" },
-  ];
+const EmployeeDashboard = ({ employeeId }) => {
+  const [attendanceHistory, setAttendanceHistory] = useState([]);
+  const router = useRouter();
+  const [loading, setLoading] = useState(true); // Add loading state to prevent flash
 
-  const verificationData = [
-    { timestamp: "2024/04/05 07:19am", status: "On-Time" },
-    { timestamp: "2024/04/05 07:19am", status: "On-Time" },
-    { timestamp: "2024/04/05 07:19am", status: "On-Time" },
-    { timestamp: "2024/04/05 07:19am", status: "On-Time" },
-    { timestamp: "2024/04/05 07:19am", status: "On-Time" },
-  ];
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      router.replace("/user"); // Use replace to prevent adding to history stack
+    } else {
+      setLoading(false); // Allow rendering when authenticated
+    }
+  }, [router]);
+
+  useEffect(() => {
+    fetchAttendanceHistory();
+  }, []);
+
+  const fetchAttendanceHistory = async () => {
+    try {
+      const response = await axios.get(`http://localhost:4000/attendance/history/${employeeId}`);
+      console.log('response',response);
+      setAttendanceHistory(response.data);
+    } catch (err) {
+      console.error('Error fetching attendance history:', err);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.clear();
+    router.replace("/user");
+  };
 
   return (
     <div className="w-auto h-screen bg-indigo-50 p-10">
-      <div className="w-auto mx-20 h-auto bg-white p-10">
-        <h1 className="text-2xl font-bold mb-6">EMPLOYEE DASHBOARD</h1>
+      <div className="w-auto  h-screen bg-white p-10">
+      <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-semibold ">
+          EMPLOYEE DASHBOARD
+          </h1>
+          <Button onClick={handleLogout} className="flex items-center">
+            <LogOut className="w-4 h-4 mr-2" />
+            Logout
+          </Button>
+        </div>
 
         <section className="mb-8 w-[700px]">
           <h2 className="text-xl font-semibold mb-4">Mark Attendance</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {attendanceData.map((data, index) => (
-              <AttendanceMarker key={index} {...data} />
-            ))}
-          </div>
+          <AttendanceMarker employeeId={employeeId} />
         </section>
 
-        <section >
-          <h2 className="text-xl font-semibold mb-4 ">
+        <section>
+          <h2 className="text-xl font-semibold mb-4">
             Attendance Verification
           </h2>
-          <AttendanceVerificationTable data={verificationData} />
+          <AttendanceVerificationTable data={attendanceHistory} />
         </section>
       </div>
     </div>
