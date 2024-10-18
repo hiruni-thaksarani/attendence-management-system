@@ -133,8 +133,8 @@ const AddOrganizationPopup = ({ isOpen, onClose, onAdd }) => {
         <label className="block text-gray-700 text-sm mb-2" htmlFor="registration">Registration Number</label>
         <Input id="registration" type="text" name="registration" value={newOrg.registration} onChange={handleChange} />
       </div>
-      {error && <p className="text-red-500 mb-4">{error}</p>}
-      <Button onClick={handleSubmit}>ADD ORGANIZATION</Button>
+      {error && <p className="text-red-500 mb-4 ">{error}</p>}
+      <Button className="w-full"onClick={handleSubmit}>ADD ORGANIZATION</Button>
     </Dialog>
   );
 };

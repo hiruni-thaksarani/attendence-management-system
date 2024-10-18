@@ -145,7 +145,7 @@ const AddAdminPopup = ({ isOpen, onClose, onAdd, selectedOrg }) => {
         <Input id="contactNumber" type="text" name="contactNumber" value={newAdmin.contactNumber} onChange={handleChange} />
       </div>
       {error && <p className="text-red-500 mb-4">{error}</p>}
-      <Button onClick={handleSubmit}>ADD ORGANIZATION ADMIN</Button>
+      <Button className="w-full" onClick={handleSubmit}>ADD ORGANIZATION ADMIN</Button>
     </Dialog>
   );
 };

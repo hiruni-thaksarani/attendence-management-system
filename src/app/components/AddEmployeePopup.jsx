@@ -137,7 +137,7 @@ const AddEmployeePopup = ({ isOpen, onClose, onAdd, selectedOrg }) => {
           <Input id="contactNumber" type="text" name="contactNumber" value={newEmployee.contactNumber} onChange={handleChange} />
         </div>
         {error && <p className="text-red-500 mb-4">{error}</p>}
-        <Button onClick={handleSubmit}>ADD ORGANIZATION EMPLOYEE</Button>
+        <Button className="w-full" onClick={handleSubmit}>ADD ORGANIZATION EMPLOYEE</Button>
       </Dialog>
     );
   };
