@@ -6,13 +6,12 @@ import Web3 from 'web3';
 import getContractInstance from 'src/contract/ContractInstance';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { Loader2 } from 'lucide-react'; // Import the Loader2 icon from lucide-react
-
+import { Loader2 } from 'lucide-react';
 
 const AddOrganizationPopup = ({ isOpen, onClose, onAdd }) => {
   const [newOrg, setNewOrg] = useState({ name: '', address: '', contact: '', registration: '' });
+  const [errors, setErrors] = useState({});
   const [contract, setContract] = useState(null);
-  const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -23,21 +22,39 @@ const AddOrganizationPopup = ({ isOpen, onClose, onAdd }) => {
         console.log("Contract instance initialized:", contractInstance);
       } catch (error) {
         console.error("Failed to initialize contract:", error);
-        setError("Failed to initialize contract. Please make sure MetaMask is connected and on the correct network.");
+        setErrors(prev => ({ ...prev, contract: "Failed to initialize contract. Please make sure MetaMask is connected and on the correct network." }));
       }
     };
     initContract();
   }, []);
 
   const handleChange = (e) => {
-    setNewOrg({ ...newOrg, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setNewOrg({ ...newOrg, [name]: value });
+    // Clear the error for this field when the user starts typing
+    setErrors(prev => ({ ...prev, [name]: '' }));
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    Object.entries(newOrg).forEach(([key, value]) => {
+      if (value.trim() === '') {
+        newErrors[key] = `${key.charAt(0).toUpperCase() + key.slice(1)} is required`;
+      }
+    });
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
-    setError(null);
+    if (!validateForm()) {
+      return;
+    }
+
     setIsLoading(true);
+
     if (!contract) {
-      setError("Contract not initialized. Please make sure MetaMask is connected and on the correct network.");
+      setErrors(prev => ({ ...prev, contract: "Contract not initialized. Please make sure MetaMask is connected and on the correct network." }));
       setIsLoading(false);
       return;
     }
@@ -50,20 +67,8 @@ const AddOrganizationPopup = ({ isOpen, onClose, onAdd }) => {
       console.log(orgId);
       console.log(account);
   
-    //   let gasEstimate;
-    //   try {
-    //     gasEstimate = await contract.methods.addOrganization(orgId).estimateGas({ from: account });
-    //     gasEstimate = Math.ceil(Number(gasEstimate) * 2).toString();
-    //   } catch (gasError) {
-    //     console.error("Gas estimation failed:", gasError);
-    //     setError("Gas estimation failed.");
-    //     setIsLoading(false);
-    //     return;
-    //   }
-  
       const transactionResult = await contract.methods.addOrganization(orgId).send({
         from: account,
-        // gas: gasEstimate,
       });
       console.log("Blockchain transaction result:", transactionResult);
 
@@ -80,7 +85,6 @@ const AddOrganizationPopup = ({ isOpen, onClose, onAdd }) => {
       setNewOrg({ name: '', address: '', contact: '', registration: '' });
       onClose();
 
-      // Display success toast message
       toast.success(`Organization ${newOrg.name} added successfully!`, {
         position: "top-right",
         autoClose: 5000,
@@ -94,9 +98,8 @@ const AddOrganizationPopup = ({ isOpen, onClose, onAdd }) => {
       if (error.data) {
         console.error("Error data:", error.data);
       }
-      setError(`Failed to add organization: ${error.message || 'Unknown error'}`);
+      setErrors(prev => ({ ...prev, submit: `Failed to add organization: ${error.message || 'Unknown error'}` }));
 
-      // Display error toast message
       toast.error(`Failed to add organization: ${error.message || 'Unknown error'}`, {
         position: "top-right",
         autoClose: 5000,
@@ -105,14 +108,14 @@ const AddOrganizationPopup = ({ isOpen, onClose, onAdd }) => {
         pauseOnHover: true,
         draggable: true,
       });
-    }finally {
-        setIsLoading(false);
-      }
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   return (
     <Dialog isOpen={isOpen} onClose={onClose} title="Add New Organization">
-        {isLoading && (
+      {isLoading && (
         <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center z-50">
           <Loader2 className="h-12 w-12 animate-spin text-blue-500" />
         </div>
@@ -120,21 +123,26 @@ const AddOrganizationPopup = ({ isOpen, onClose, onAdd }) => {
       <div className="mb-4">
         <label className="block text-gray-700 text-sm mb-2" htmlFor="name">Organization Name</label>
         <Input id="name" type="text" name="name" value={newOrg.name} onChange={handleChange} />
+        {errors.name && <p className="text-red-500 text-xs italic mt-1">{errors.name}</p>}
       </div>
       <div className="mb-4">
         <label className="block text-gray-700 text-sm mb-2" htmlFor="address">Address</label>
         <Input id="address" type="text" name="address" value={newOrg.address} onChange={handleChange} />
+        {errors.address && <p className="text-red-500 text-xs italic mt-1">{errors.address}</p>}
       </div>
       <div className="mb-4">
         <label className="block text-gray-700 text-sm mb-2" htmlFor="contact">Contact Number</label>
         <Input id="contact" type="text" name="contact" value={newOrg.contact} onChange={handleChange} />
+        {errors.contact && <p className="text-red-500 text-xs italic mt-1">{errors.contact}</p>}
       </div>
       <div className="mb-6">
         <label className="block text-gray-700 text-sm mb-2" htmlFor="registration">Registration Number</label>
         <Input id="registration" type="text" name="registration" value={newOrg.registration} onChange={handleChange} />
+        {errors.registration && <p className="text-red-500 text-xs italic mt-1">{errors.registration}</p>}
       </div>
-      {error && <p className="text-red-500 mb-4">{error}</p>}
-      <Button onClick={handleSubmit}>ADD ORGANIZATION</Button>
+      {errors.contract && <p className="text-red-500 mb-4">{errors.contract}</p>}
+      {errors.submit && <p className="text-red-500 mb-4">{errors.submit}</p>}
+      <Button className="w-full" onClick={handleSubmit}>ADD ORGANIZATION</Button>
     </Dialog>
   );
 };

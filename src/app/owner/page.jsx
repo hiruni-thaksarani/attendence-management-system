@@ -28,7 +28,7 @@ const OrganizationManagementDashboard = () => {
     
     if (searchParams.get('logged') === 'true') {
       // alert('Logged')
-      showSuccessToast("Login successful!");
+      showSuccessToast("login successful!");
     }
     handleFetchOrganizations();
     clearQueryParams();
