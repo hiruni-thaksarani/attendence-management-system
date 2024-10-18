@@ -31,7 +31,6 @@ const AddOrganizationPopup = ({ isOpen, onClose, onAdd }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setNewOrg({ ...newOrg, [name]: value });
-    // Clear the error for this field when the user starts typing
     setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
@@ -82,7 +81,7 @@ const AddOrganizationPopup = ({ isOpen, onClose, onAdd }) => {
       console.log("Database storage result:", dbResponse.data);
   
       onAdd({ ...newOrg, id: orgId });
-      setNewOrg({ name: '', address: '', contact: '', registration: '' });
+      resetForm();
       onClose();
 
       toast.success(`Organization ${newOrg.name} added successfully!`, {
@@ -112,9 +111,19 @@ const AddOrganizationPopup = ({ isOpen, onClose, onAdd }) => {
       setIsLoading(false);
     }
   };
+
+  const resetForm = () => {
+    setNewOrg({ name: '', address: '', contact: '', registration: '' });
+    setErrors({});
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
   
   return (
-    <Dialog isOpen={isOpen} onClose={onClose} title="Add New Organization">
+    <Dialog isOpen={isOpen} onClose={handleClose} title="Add New Organization">
       {isLoading && (
         <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center z-50">
           <Loader2 className="h-12 w-12 animate-spin text-blue-500" />

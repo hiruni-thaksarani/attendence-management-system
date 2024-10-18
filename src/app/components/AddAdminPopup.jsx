@@ -1,4 +1,3 @@
-"use client";
 import React, { useState, useEffect } from 'react';
 import Dialog from './Dialog';
 import Button from './Button';
@@ -33,7 +32,6 @@ const AddAdminPopup = ({ isOpen, onClose, onAdd, selectedOrg }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setNewAdmin({ ...newAdmin, [name]: value });
-    // Clear the error for this field when the user starts typing
     setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
@@ -59,6 +57,11 @@ const AddAdminPopup = ({ isOpen, onClose, onAdd, selectedOrg }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const resetForm = () => {
+    setNewAdmin({ name: '', walletAddress: '', email: '', contactNumber: '' });
+    setErrors({});
+  };
+
   const handleSubmit = async () => {
     if (!validateForm()) {
       return;
@@ -76,16 +79,13 @@ const AddAdminPopup = ({ isOpen, onClose, onAdd, selectedOrg }) => {
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       const account = accounts[0];
 
-      // Convert orgId to bytes32
       const orgId = selectedOrg.orgId;
 
-      // Execute blockchain transaction
       const transactionResult = await contract.methods.addAdmin(orgId, newAdmin.walletAddress).send({
         from: account,
       });
       console.log("Blockchain transaction result:", transactionResult);
 
-      // Store in database
       const dbResponse = await axios.post("http://localhost:4000/user/admin", {
         name: newAdmin.name,
         walletAddress: newAdmin.walletAddress,
@@ -104,7 +104,7 @@ const AddAdminPopup = ({ isOpen, onClose, onAdd, selectedOrg }) => {
         user_type: 'ADMIN',
         organizationId: selectedOrg._id
       });
-      setNewAdmin({ name: '', walletAddress: '', email: '', contactNumber: '' });
+      resetForm();
       onClose();
       toast.success(`Admin ${newAdmin.name} added successfully!`, {
         position: "top-right",
@@ -116,8 +116,18 @@ const AddAdminPopup = ({ isOpen, onClose, onAdd, selectedOrg }) => {
       });
     } catch (error) {
       console.error("Failed to add admin:", error);
-      setErrors(prev => ({ ...prev, submit: `Failed to add admin: ${error.message || 'Unknown error'}` }));
-      toast.error(`Failed to add admin: ${error.message || 'Unknown error'}`, {
+      
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+      
+      if (error.message.includes('Transaction has been reverted by the EVM')) {
+        errorMessage = 'This wallet address is already associated with a user. Please use a different wallet address.';
+      } else if (error.response && error.response.data && error.response.data.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      setErrors(prev => ({ ...prev, submit: errorMessage }));
+      
+      toast.error(errorMessage, {
         position: "top-right",
         autoClose: 5000,
         hideProgressBar: false,
@@ -130,8 +140,13 @@ const AddAdminPopup = ({ isOpen, onClose, onAdd, selectedOrg }) => {
     }
   };
 
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
   return (
-    <Dialog isOpen={isOpen} onClose={onClose} title={`Add Organization Admin`}>
+    <Dialog isOpen={isOpen} onClose={handleClose} title={`Add Organization Admin`}>
       {isLoading && (
         <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center z-50">
           <Loader2 className="h-12 w-12 animate-spin text-blue-500" />
