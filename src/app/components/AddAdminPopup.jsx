@@ -10,10 +10,10 @@ import { toast } from 'react-toastify';
 import { Loader2 } from 'lucide-react';
 
 const AddAdminPopup = ({ isOpen, onClose, onAdd, selectedOrg }) => {
-    console.log('selectedOrg',selectedOrg)
+  console.log('selectedOrg', selectedOrg)
   const [newAdmin, setNewAdmin] = useState({ name: '', walletAddress: '', email: '', contactNumber: '' });
+  const [errors, setErrors] = useState({});
   const [contract, setContract] = useState(null);
-  const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -24,22 +24,50 @@ const AddAdminPopup = ({ isOpen, onClose, onAdd, selectedOrg }) => {
         console.log("Contract instance initialized:", contractInstance);
       } catch (error) {
         console.error("Failed to initialize contract:", error);
-        setError("Failed to initialize contract. Please make sure MetaMask is connected and on the correct network.");
+        setErrors(prev => ({ ...prev, contract: "Failed to initialize contract. Please make sure MetaMask is connected and on the correct network." }));
       }
     };
     initContract();
   }, []);
 
   const handleChange = (e) => {
-    setNewAdmin({ ...newAdmin, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setNewAdmin({ ...newAdmin, [name]: value });
+    // Clear the error for this field when the user starts typing
+    setErrors(prev => ({ ...prev, [name]: '' }));
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (newAdmin.name.trim() === '') {
+      newErrors.name = 'Name is required';
+    }
+    if (newAdmin.walletAddress.trim() === '') {
+      newErrors.walletAddress = 'Wallet Address is required';
+    } else if (!Web3.utils.isAddress(newAdmin.walletAddress)) {
+      newErrors.walletAddress = 'Invalid wallet address';
+    }
+    if (newAdmin.email.trim() === '') {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(newAdmin.email)) {
+      newErrors.email = 'Invalid email format';
+    }
+    if (newAdmin.contactNumber.trim() === '') {
+      newErrors.contactNumber = 'Contact Number is required';
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async () => {
-    setError(null);
+    if (!validateForm()) {
+      return;
+    }
+    
     setIsLoading(true);
 
     if (!contract) {
-      setError("Contract not initialized. Please make sure MetaMask is connected and on the correct network.");
+      setErrors(prev => ({ ...prev, contract: "Contract not initialized. Please make sure MetaMask is connected and on the correct network." }));
       setIsLoading(false);
       return;
     }
@@ -51,28 +79,9 @@ const AddAdminPopup = ({ isOpen, onClose, onAdd, selectedOrg }) => {
       // Convert orgId to bytes32
       const orgId = selectedOrg.orgId;
 
-      // Ensure the wallet address is valid
-      if (!Web3.utils.isAddress(newAdmin.walletAddress)) {
-        setError("Invalid wallet address");
-        setIsLoading(false);
-        return;
-      }
-
-      // Estimate gas for the transaction
-    //   let gasEstimate;
-    //   try {
-    //     gasEstimate = await contract.methods.addAdmin(orgId, newAdmin.walletAddress).estimateGas({ from: account });
-    //     gasEstimate = Math.ceil(Number(gasEstimate) * 1.5).toString(); // Increase gas estimate by 50%
-    //   } catch (gasError) {
-    //     console.error("Gas estimation failed:", gasError);
-    //     setError("Gas estimation failed. The transaction might fail.");
-    //     return;
-    //   }
-
       // Execute blockchain transaction
       const transactionResult = await contract.methods.addAdmin(orgId, newAdmin.walletAddress).send({
         from: account,
-        // gas: gasEstimate,
       });
       console.log("Blockchain transaction result:", transactionResult);
 
@@ -107,7 +116,7 @@ const AddAdminPopup = ({ isOpen, onClose, onAdd, selectedOrg }) => {
       });
     } catch (error) {
       console.error("Failed to add admin:", error);
-      setError(`Failed to add admin: ${error.message || 'Unknown error'}`);
+      setErrors(prev => ({ ...prev, submit: `Failed to add admin: ${error.message || 'Unknown error'}` }));
       toast.error(`Failed to add admin: ${error.message || 'Unknown error'}`, {
         position: "top-right",
         autoClose: 5000,
@@ -116,14 +125,14 @@ const AddAdminPopup = ({ isOpen, onClose, onAdd, selectedOrg }) => {
         pauseOnHover: true,
         draggable: true,
       });
-    }finally {
-        setIsLoading(false);
-      }
-    };
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <Dialog isOpen={isOpen} onClose={onClose} title={`Add Organization Admin`}>
-         {isLoading && (
+      {isLoading && (
         <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center z-50">
           <Loader2 className="h-12 w-12 animate-spin text-blue-500" />
         </div>
@@ -131,20 +140,25 @@ const AddAdminPopup = ({ isOpen, onClose, onAdd, selectedOrg }) => {
       <div className="mb-4">
         <label className="block text-gray-700 text-sm mb-2" htmlFor="name">Admin Name</label>
         <Input id="name" type="text" name="name" value={newAdmin.name} onChange={handleChange} />
+        {errors.name && <p className="text-red-500 text-xs italic mt-1">{errors.name}</p>}
       </div>
       <div className="mb-4">
         <label className="block text-gray-700 text-sm mb-2" htmlFor="walletAddress">Wallet Address</label>
         <Input id="walletAddress" type="text" name="walletAddress" value={newAdmin.walletAddress} onChange={handleChange} />
+        {errors.walletAddress && <p className="text-red-500 text-xs italic mt-1">{errors.walletAddress}</p>}
       </div>
       <div className="mb-4">
         <label className="block text-gray-700 text-sm mb-2" htmlFor="email">Email</label>
         <Input id="email" type="email" name="email" value={newAdmin.email} onChange={handleChange} />
+        {errors.email && <p className="text-red-500 text-xs italic mt-1">{errors.email}</p>}
       </div>
       <div className="mb-6">
         <label className="block text-gray-700 text-sm mb-2" htmlFor="contactNumber">Contact Number</label>
         <Input id="contactNumber" type="text" name="contactNumber" value={newAdmin.contactNumber} onChange={handleChange} />
+        {errors.contactNumber && <p className="text-red-500 text-xs italic mt-1">{errors.contactNumber}</p>}
       </div>
-      {error && <p className="text-red-500 mb-4">{error}</p>}
+      {errors.contract && <p className="text-red-500 mb-4">{errors.contract}</p>}
+      {errors.submit && <p className="text-red-500 mb-4">{errors.submit}</p>}
       <Button className="w-full" onClick={handleSubmit}>ADD ORGANIZATION ADMIN</Button>
     </Dialog>
   );
