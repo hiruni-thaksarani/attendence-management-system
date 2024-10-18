@@ -19,6 +19,7 @@ const OrganizationManagementDashboard = () => {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("jwtToken");
@@ -57,6 +58,10 @@ const OrganizationManagementDashboard = () => {
         registrationNumber: newOrg.registration,
         id: newOrg.id
       }]);
+      setRefreshing(true);
+      await handleFetchOrganizations();
+      setRefreshing(false);
+
     } catch (error) {
       console.error("Failed to add organization:", error);
     }
@@ -87,6 +92,7 @@ const OrganizationManagementDashboard = () => {
   return (
     <div className="p-10 bg-indigo-50 h-screen">
       <div className="bg-white h-screen p-10 relative">
+        
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-semibold ml-5">
             ORGANIZATION MANAGEMENT DASHBOARD
