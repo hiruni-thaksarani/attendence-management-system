@@ -1,4 +1,3 @@
-"use client";
 import React, { useState, useEffect } from 'react';
 import Dialog from './Dialog';
 import Button from './Button';
@@ -121,9 +120,16 @@ const AddEmployeePopup = ({ isOpen, onClose, onAdd, selectedOrg }) => {
       
     } catch (error) {
       console.error("Failed to add employee:", error);
-      setErrors(prev => ({ ...prev, submit: `Failed to add employee: ${error.message || 'Unknown error'}` }));
+      
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+      
+      if (error.message.includes('Transaction has been reverted by the EVM')) {
+        errorMessage = 'This wallet address is already associated with a user. Please use a different wallet address.';
+      }
+      
+      setErrors(prev => ({ ...prev, submit: errorMessage }));
 
-      toast.error(`Failed to add employee: ${error.message || 'Unknown error'}`, {
+      toast.error(errorMessage, {
         position: "top-right",
         autoClose: 5000,
         hideProgressBar: false,

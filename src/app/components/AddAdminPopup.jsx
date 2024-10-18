@@ -1,4 +1,3 @@
-"use client";
 import React, { useState, useEffect } from 'react';
 import Dialog from './Dialog';
 import Button from './Button';
@@ -117,8 +116,18 @@ const AddAdminPopup = ({ isOpen, onClose, onAdd, selectedOrg }) => {
       });
     } catch (error) {
       console.error("Failed to add admin:", error);
-      setErrors(prev => ({ ...prev, submit: `Failed to add admin: ${error.message || 'Unknown error'}` }));
-      toast.error(`Failed to add admin: ${error.message || 'Unknown error'}`, {
+      
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+      
+      if (error.message.includes('Transaction has been reverted by the EVM')) {
+        errorMessage = 'This wallet address is already associated with a user. Please use a different wallet address.';
+      } else if (error.response && error.response.data && error.response.data.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      setErrors(prev => ({ ...prev, submit: errorMessage }));
+      
+      toast.error(errorMessage, {
         position: "top-right",
         autoClose: 5000,
         hideProgressBar: false,
