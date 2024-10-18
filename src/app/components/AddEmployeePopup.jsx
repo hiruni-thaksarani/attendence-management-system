@@ -32,7 +32,6 @@ const AddEmployeePopup = ({ isOpen, onClose, onAdd, selectedOrg }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setNewEmployee({ ...newEmployee, [name]: value });
-    // Clear the error for this field when the user starts typing
     setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
@@ -61,6 +60,11 @@ const AddEmployeePopup = ({ isOpen, onClose, onAdd, selectedOrg }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const resetForm = () => {
+    setNewEmployee({ name: '', walletAddress: '', employeeNumber: '', email: '', contactNumber: '' });
+    setErrors({});
+  };
+
   const handleSubmit = async () => {
     if (!validateForm()) {
       return;
@@ -78,7 +82,6 @@ const AddEmployeePopup = ({ isOpen, onClose, onAdd, selectedOrg }) => {
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       const account = accounts[0];
 
-      // Execute blockchain transaction
       const transactionResult = await contract.methods.addEmployee(newEmployee.walletAddress).send({
         from: account,
       });
@@ -88,7 +91,6 @@ const AddEmployeePopup = ({ isOpen, onClose, onAdd, selectedOrg }) => {
       console.log('organizationId', organizationId)
       const orgId = localStorage.getItem('orgId');
 
-      // Store in database
       const dbResponse = await axios.post("http://localhost:4000/user/employee", {
         ...newEmployee,
         role: 'EMPLOYEE',
@@ -105,7 +107,7 @@ const AddEmployeePopup = ({ isOpen, onClose, onAdd, selectedOrg }) => {
         orgId: orgId,
         organizationId: organizationId
       });
-      setNewEmployee({ name: '', walletAddress: '', employeeNumber: '', email: '', contactNumber: '' });
+      resetForm();
       onClose();
 
       toast.success(`Employee added successfully!`, {
@@ -134,8 +136,13 @@ const AddEmployeePopup = ({ isOpen, onClose, onAdd, selectedOrg }) => {
     }
   };
 
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
   return (
-    <Dialog isOpen={isOpen} onClose={onClose} title={`Add Organization Employee`}>
+    <Dialog isOpen={isOpen} onClose={handleClose} title={`Add Organization Employee`}>
       {isLoading && (
         <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center z-50">
           <Loader2 className="h-12 w-12 animate-spin text-blue-500" />
