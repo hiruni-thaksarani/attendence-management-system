@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import { Loader2 } from 'lucide-react';
 import getContractInstance from 'src/contract/ContractInstance';
 
-const AttendanceMarker = ({ employeeId }) => {
+const AttendanceMarker = ({ employeeid }) => {
   const [date, setDate] = useState('');
   const [currentTime, setCurrentTime] = useState('');
   const [status, setStatus] = useState('unmarked');
@@ -34,7 +34,9 @@ const AttendanceMarker = ({ employeeId }) => {
 
   const checkAttendance = async () => {
     try {
+        const employeeId = localStorage.getItem('userId');
       const response = await axios.get(`http://localhost:4000/attendance/history/${employeeId}`);
+      console.log('response',response)
       const todayAttendance = response.data.find(
         (record) => new Date(record.date).toDateString() === new Date().toDateString()
       );
@@ -57,16 +59,16 @@ const AttendanceMarker = ({ employeeId }) => {
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       const account = accounts[0];
 
-      // First, mark attendance in the backend
-      const backendResponse = await axios.post(`http://localhost:4000/attendance/mark/${employeeId}`);
-      setStatus(backendResponse.data.status);
-
       // Then, mark attendance on the blockchain
       const gasEstimate = await contract.methods.markAttendance().estimateGas({ from: account });
       const result = await contract.methods.markAttendance().send({
         from: account,
         gas: Math.ceil(gasEstimate * 1.2), // Add 20% buffer to gas estimate
       });
+      const employeeId = localStorage.getItem('userId');
+      // First, mark attendance in the backend
+      const backendResponse = await axios.post(`http://localhost:4000/attendance/mark/${employeeId}`);
+      setStatus(backendResponse.data.status);
 
       console.log('Blockchain transaction result:', result);
 

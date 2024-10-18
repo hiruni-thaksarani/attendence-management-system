@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Web3 from 'web3';
 import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
 const LoginPage = () => {
   const [web3, setWeb3] = useState(null);
@@ -78,14 +77,14 @@ const LoginPage = () => {
         console.log('JWT Token:', data.token);
         // Store the JWT token in localStorage or a secure cookie
         localStorage.setItem('jwtToken', data.token);
-        // toast.success('Login successful!');
-        router.push(`/dashboard/owner`);
+        // Navigate to dashboard with success parameter
+        router.push('/dashboard/owner?success=true');
       } else {
         throw new Error(data.message || "Signature verification failed");
       }
     } catch (error) {
       console.error('Error signing message', error);
-      toast.error("Login failed.Connect to a valid account.");
+      toast.error("Login failed. Connect to a valid account.");
     }
   };
 

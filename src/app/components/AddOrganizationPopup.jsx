@@ -50,20 +50,20 @@ const AddOrganizationPopup = ({ isOpen, onClose, onAdd }) => {
       console.log(orgId);
       console.log(account);
   
-      let gasEstimate;
-      try {
-        gasEstimate = await contract.methods.addOrganization(orgId).estimateGas({ from: account });
-        gasEstimate = Math.ceil(Number(gasEstimate) * 2).toString();
-      } catch (gasError) {
-        console.error("Gas estimation failed:", gasError);
-        setError("Gas estimation failed.");
-        setIsLoading(false);
-        return;
-      }
+    //   let gasEstimate;
+    //   try {
+    //     gasEstimate = await contract.methods.addOrganization(orgId).estimateGas({ from: account });
+    //     gasEstimate = Math.ceil(Number(gasEstimate) * 2).toString();
+    //   } catch (gasError) {
+    //     console.error("Gas estimation failed:", gasError);
+    //     setError("Gas estimation failed.");
+    //     setIsLoading(false);
+    //     return;
+    //   }
   
       const transactionResult = await contract.methods.addOrganization(orgId).send({
         from: account,
-        gas: gasEstimate,
+        // gas: gasEstimate,
       });
       console.log("Blockchain transaction result:", transactionResult);
 

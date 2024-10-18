@@ -52,6 +52,9 @@ const LoginPage = () => {
         localStorage.setItem('authToken', result.token);
         localStorage.setItem('organizationId', result.organizationId);
         localStorage.setItem('orgId', result.orgId);
+        localStorage.setItem('userId', result.userId);
+
+        console.log(result)
         
         if (result.role === 'ADMIN') {
           router.push(`/dashboard/admin`);

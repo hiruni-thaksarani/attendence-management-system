@@ -5,8 +5,9 @@ import Button from "src/app/components/Button";
 import AddOrganizationPopup from "src/app/components/AddOrganizationPopup";
 import AddAdminPopup from "src/app/components/AddAdminPopup";
 import withAuth from "src/app/auth/withAuth";
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, LogOut } from 'lucide-react';
+import { toast, ToastContainer } from 'react-toastify';
 
 const OrganizationManagementDashboard = () => {
   const [organizations, setOrganizations] = useState([]);
@@ -14,21 +15,36 @@ const OrganizationManagementDashboard = () => {
   const [isAddAdminPopupOpen, setIsAddAdminPopupOpen] = useState(false);
   const [selectedOrg, setSelectedOrg] = useState(null);
   const [actionMenuOpenIndex, setActionMenuOpenIndex] = useState(null);
-  const [loading, setLoading] = useState(true); // Add loading state to prevent flash
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  useEffect(() => {
+   useEffect(() => {
     const token = localStorage.getItem("jwtToken");
     if (!token) {
-      router.replace("/po"); // Use replace to prevent adding to history stack
+      router.replace("/po");
     } else {
-      setLoading(false); // Allow rendering when authenticated
+      
+      // Show toast when success parameter is true
+      const success = searchParams.get('success');
+      
+      if (success === 'true') {
+        toast.success('PO logged successfully!', {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        handleFetchOrganizations();
+        //Remove the success parameter from the URL to avoid showing the toast on refresh
+        // const newUrl = window.location.pathname;
+        // router.replace(newUrl, undefined, { shallow: true }); // shallow routing prevents a full page reload
+      }
+      setLoading(false);
     }
-  }, [router]);
-
-  useEffect(() => {
-    handleFetchOrganizations();
-  }, []);
+  }, [router,searchParams]);
 
   const handleFetchOrganizations = async () => {
     try {
@@ -70,6 +86,10 @@ const OrganizationManagementDashboard = () => {
     localStorage.clear(); 
     router.replace("/po");
   };
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-screen"><Loader2 className="animate-spin" /></div>;
+  }
 
   return (
     <div className="p-10 bg-indigo-50 h-screen">
@@ -162,4 +182,3 @@ const OrganizationManagementDashboard = () => {
 };
 
 export default OrganizationManagementDashboard;
-

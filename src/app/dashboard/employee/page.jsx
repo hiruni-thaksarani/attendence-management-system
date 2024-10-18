@@ -8,6 +8,7 @@ import { Loader2, LogOut } from 'lucide-react';
 import Button from "src/app/components/Button";
 
 const EmployeeDashboard = ({ employeeId }) => {
+  console.log('employeeId-2',employeeId)
   const [attendanceHistory, setAttendanceHistory] = useState([]);
   const router = useRouter();
   const [loading, setLoading] = useState(true); // Add loading state to prevent flash
@@ -27,6 +28,7 @@ const EmployeeDashboard = ({ employeeId }) => {
 
   const fetchAttendanceHistory = async () => {
     try {
+      const employeeId = localStorage.getItem('userId');
       const response = await axios.get(`http://localhost:4000/attendance/history/${employeeId}`);
       console.log('response',response);
       setAttendanceHistory(response.data);
