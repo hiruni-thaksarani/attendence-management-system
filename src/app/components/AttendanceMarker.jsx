@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
 import { Loader2 } from 'lucide-react';
 import getContractInstance from 'src/contract/ContractInstance';
 
-const AttendanceMarker = ({ employeeid }) => {
+const AttendanceMarker = ({ employeeid, onAttendanceMarked }) => {
   const [date, setDate] = useState('');
   const [currentTime, setCurrentTime] = useState('');
   const [status, setStatus] = useState('unmarked');
@@ -72,7 +72,7 @@ const AttendanceMarker = ({ employeeid }) => {
 
       console.log('Blockchain transaction result:', result);
 
-      toast.success('Attendance marked successfully on blockchain!', {
+      toast.success('Attendance marked successfully!', {
         position: "top-right",
         autoClose: 5000,
         hideProgressBar: false,
@@ -80,6 +80,9 @@ const AttendanceMarker = ({ employeeid }) => {
         pauseOnHover: true,
         draggable: true,
       });
+      if (onAttendanceMarked) {
+        onAttendanceMarked();
+      }
     } catch (err) {
       console.error('Error marking attendance:', err);
       setError('Failed to mark attendance. Please try again.');

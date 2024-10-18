@@ -9,10 +9,9 @@ import Button from "src/app/components/Button";
 import { Toast, showSuccessToast } from "src/app/components/Toast";
 
 const EmployeeDashboard = ({ employeeId }) => {
-  console.log('employeeId-2',employeeId)
   const [attendanceHistory, setAttendanceHistory] = useState([]);
   const router = useRouter();
-  const [loading, setLoading] = useState(false); // Add loading state to prevent flash
+  const [loading, setLoading] = useState(false);
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -22,15 +21,14 @@ const EmployeeDashboard = ({ employeeId }) => {
     }
     
     if (searchParams.get('logged') === 'true') {
-      // alert('Logged')
       showSuccessToast("Login successful!");
     }
     clearQueryParams();
-  }, [searchParams,router]);
+  }, [searchParams, router]);
 
   const clearQueryParams = useCallback(() => {
     router.replace(window.location.pathname);
-  }, [router])
+  }, [router]);
 
   useEffect(() => {
     fetchAttendanceHistory();
@@ -40,12 +38,15 @@ const EmployeeDashboard = ({ employeeId }) => {
     try {
       const employeeId = localStorage.getItem('userId');
       const response = await axios.get(`http://localhost:4000/attendance/history/${employeeId}`);
-      console.log('response',response);
       setAttendanceHistory(response.data);
     } catch (err) {
       console.error('Error fetching attendance history:', err);
     }
   };
+
+  const handleAttendanceMarked = useCallback(() => {
+    fetchAttendanceHistory();
+  }, []);
 
   const handleLogout = () => {
     localStorage.clear();
@@ -54,10 +55,10 @@ const EmployeeDashboard = ({ employeeId }) => {
 
   return (
     <div className="w-auto h-screen bg-indigo-50 p-10">
-      <div className="w-auto  h-screen bg-white p-10">
-      <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold ">
-          EMPLOYEE DASHBOARD
+      <div className="w-auto h-screen bg-white p-10">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-semibold">
+            EMPLOYEE DASHBOARD
           </h1>
           <Button onClick={handleLogout} className="flex items-center">
             <LogOut className="w-4 h-4 mr-2" />
@@ -67,7 +68,7 @@ const EmployeeDashboard = ({ employeeId }) => {
 
         <section className="mb-8 w-[700px]">
           <h2 className="text-xl font-semibold mb-4">Mark Attendance</h2>
-          <AttendanceMarker employeeId={employeeId} />
+          <AttendanceMarker employeeId={employeeId} onAttendanceMarked={handleAttendanceMarked} />
         </section>
 
         <section>
@@ -77,7 +78,7 @@ const EmployeeDashboard = ({ employeeId }) => {
           <AttendanceVerificationTable data={attendanceHistory} />
         </section>
       </div>
-      <Toast/>
+      <Toast />
     </div>
   );
 };
