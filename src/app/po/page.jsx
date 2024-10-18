@@ -78,7 +78,7 @@ const LoginPage = () => {
         // Store the JWT token in localStorage or a secure cookie
         localStorage.setItem('jwtToken', data.token);
         // Navigate to dashboard with success parameter
-        router.push('/dashboard/owner?success=true');
+        router.push('dashboard/owner?logged=true');
       } else {
         throw new Error(data.message || "Signature verification failed");
       }

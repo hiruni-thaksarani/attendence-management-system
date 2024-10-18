@@ -1,25 +1,36 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import AddEmployeePopup from "src/app/components/AddEmployeePopup";
 import Button from "src/app/components/Button";
 import { Loader2, LogOut } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Toast, showSuccessToast } from "src/app/components/Toast";
 
 const EmployeeManagementDashboard = () => {
   const [employees, setEmployees] = useState([]);
   const [isAddEmployeePopupOpen, setIsAddEmployeePopupOpen] = useState(false);
   const router = useRouter();
-  const [loading, setLoading] = useState(true); // Add loading state to prevent flash
+  const [loading, setLoading] = useState(false); // Add loading state to prevent flash
+  const searchParams = useSearchParams();
+
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     if (!token) {
       router.replace("/user"); // Use replace to prevent adding to history stack
-    } else {
-      setLoading(false); // Allow rendering when authenticated
     }
-  }, [router]);
+    
+    if (searchParams.get('logged') === 'true') {
+      // alert('Logged')
+      showSuccessToast("Login successful!");
+    }
+    clearQueryParams();
+  }, [searchParams,router]);
+
+  const clearQueryParams = useCallback(() => {
+    router.replace(window.location.pathname);
+  }, [router])
 
   useEffect(() => {
     fetchEmployees();
@@ -102,6 +113,7 @@ const EmployeeManagementDashboard = () => {
           onAdd={handleAddEmployee}
         />
       </div>
+      <Toast/>
     </div>
   );
 };

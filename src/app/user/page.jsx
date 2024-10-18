@@ -57,9 +57,9 @@ const LoginPage = () => {
         console.log(result)
         
         if (result.role === 'ADMIN') {
-          router.push(`/dashboard/admin`);
+          router.push(`/dashboard/admin?logged=true`);
         } else if (result.role === 'EMPLOYEE') {
-          router.push(`/dashboard/employee`);
+          router.push(`/dashboard/employee?logged=true`);
         } else {
           throw new Error('Invalid user role');
         }

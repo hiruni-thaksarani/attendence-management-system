@@ -1,26 +1,36 @@
 'use client';
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from 'axios';
 import AttendanceMarker from "src/app/components/AttendanceMarker";
 import AttendanceVerificationTable from "src/app/components/AttendanceVerificationTable";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, LogOut } from 'lucide-react';
 import Button from "src/app/components/Button";
+import { Toast, showSuccessToast } from "src/app/components/Toast";
 
 const EmployeeDashboard = ({ employeeId }) => {
   console.log('employeeId-2',employeeId)
   const [attendanceHistory, setAttendanceHistory] = useState([]);
   const router = useRouter();
-  const [loading, setLoading] = useState(true); // Add loading state to prevent flash
+  const [loading, setLoading] = useState(false); // Add loading state to prevent flash
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
     if (!token) {
-      router.replace("/user"); // Use replace to prevent adding to history stack
-    } else {
-      setLoading(false); // Allow rendering when authenticated
+      router.replace("/user"); 
     }
-  }, [router]);
+    
+    if (searchParams.get('logged') === 'true') {
+      // alert('Logged')
+      showSuccessToast("Login successful!");
+    }
+    clearQueryParams();
+  }, [searchParams,router]);
+
+  const clearQueryParams = useCallback(() => {
+    router.replace(window.location.pathname);
+  }, [router])
 
   useEffect(() => {
     fetchAttendanceHistory();
@@ -67,6 +77,7 @@ const EmployeeDashboard = ({ employeeId }) => {
           <AttendanceVerificationTable data={attendanceHistory} />
         </section>
       </div>
+      <Toast/>
     </div>
   );
 };
