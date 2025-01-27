@@ -3,6 +3,7 @@ import Dialog from './Dialog';
 import Button from './Button';
 import Input from './Input';
 import Web3 from 'web3';
+import { Connection, PublicKey, Transaction } from '@solana/web3.js';
 import getContractInstance from 'src/contract/ContractInstance';
 import axios from 'axios';
 import { toast } from 'react-toastify';
@@ -13,18 +14,62 @@ const AddOrganizationPopup = ({ isOpen, onClose, onAdd }) => {
   const [errors, setErrors] = useState({});
   const [contract, setContract] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [walletType, setWalletType] = useState(null);
+  const [walletAddress, setWalletAddress] = useState(null);  
 
   useEffect(() => {
+    // Get wallet info from localStorage
+    const storedWalletType = localStorage.getItem('walletType');
+    const storedWalletAddress = localStorage.getItem('walletAddress');
+    setWalletType(storedWalletType);
+    setWalletAddress(storedWalletAddress);
+
     const initContract = async () => {
-      try {
-        const contractInstance = await getContractInstance();
-        setContract(contractInstance);
-        console.log("Contract instance initialized:", contractInstance);
-      } catch (error) {
-        console.error("Failed to initialize contract:", error);
-        setErrors(prev => ({ ...prev, contract: "Failed to initialize contract. Please make sure MetaMask is connected and on the correct network." }));
+      if (storedWalletType === 'metamask' || storedWalletType === 'trust') {
+        try {
+          console.log('Starting contract initialization for wallet type:', storedWalletType);
+          
+          // Clear any previous errors
+          setErrors({});
+          
+          // Set loading state
+          setIsLoading(true);
+          
+          const contractInstance = await getContractInstance();
+          
+          // Verify contract instance
+          if (!contractInstance || !contractInstance.methods) {
+            throw new Error('Invalid contract instance returned');
+          }
+          
+          console.log('Contract initialized successfully');
+          setContract(contractInstance);
+          
+        } catch (error) {
+          console.error('Contract initialization error:', error);
+          let errorMessage = 'Failed to initialize contract. ';
+          
+          if (error.message.includes('No compatible wallet')) {
+            errorMessage += 'Please install or unlock your wallet.';
+          } else if (error.message.includes('User rejected')) {
+            errorMessage += 'Please authorize the connection.';
+          } else if (error.message.includes('network')) {
+            errorMessage += 'Please check your network connection.';
+          } else {
+            errorMessage += error.message;
+          }
+          
+          setErrors(prev => ({ 
+            ...prev, 
+            contract: errorMessage
+          }));
+          
+        } finally {
+          setIsLoading(false);
+        }
       }
     };
+
     initContract();
   }, []);
 
@@ -45,68 +90,92 @@ const AddOrganizationPopup = ({ isOpen, onClose, onAdd }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleEthereumTransaction = async (orgId) => {
+    try {
+      let account;
+      if (walletType === 'metamask') {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        account = accounts[0];
+      } else if (walletType === 'trust') {
+        // Trust Wallet specific account request
+        const accounts = await window.trustwallet.request({ method: 'eth_requestAccounts' });
+        account = accounts[0];
+        
+        // Ensure Trust Wallet is on the correct network
+        await window.trustwallet.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x13882' }],
+        });
+      }
+
+      if (!account) {
+        throw new Error('No account found. Please authorize the wallet.');
+      }
+
+      // Create transaction
+      const transaction = contract.methods.addOrganization(orgId);
+      const gasEstimate = await transaction.estimateGas({ from: account });
+      
+      return await transaction.send({
+        from: account,
+        gas: Math.round(gasEstimate * 1.2),
+      });
+    } catch (error) {
+      console.error('Transaction error:', error);
+      if (error.code === 4100) {
+        throw new Error('Please authorize the transaction in your wallet');
+      }
+      throw error;
+    }
+  };
+  
+
   const handleSubmit = async () => {
-    if (!validateForm()) {
+    if (!validateForm()) return;
+    if (!walletType || !walletAddress) {
+      setErrors(prev => ({ ...prev, submit: "No wallet connected. Please login again." }));
       return;
     }
 
     setIsLoading(true);
 
-    if (!contract) {
-      setErrors(prev => ({ ...prev, contract: "Contract not initialized. Please make sure MetaMask is connected and on the correct network." }));
-      setIsLoading(false);
-      return;
-    }
-  
     try {
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      const account = accounts[0];
-  
       const orgId = Web3.utils.padRight(Web3.utils.utf8ToHex(newOrg.name), 64);
-      console.log(orgId);
-      console.log(account);
-  
-      const transactionResult = await contract.methods.addOrganization(orgId).send({
-        from: account,
-      });
-      console.log("Blockchain transaction result:", transactionResult);
+      let transactionResult;
 
+      // Handle transaction based on wallet type
+      if (walletType === 'metamask' || walletType === 'trust') {
+        if (!contract) {
+          throw new Error('Contract not initialized');
+        }
+        transactionResult = await handleEthereumTransaction(orgId);
+      } else if (walletType === 'phantom') {
+        transactionResult = await handleSolanaTransaction(orgId);
+      } else {
+        throw new Error('Unsupported wallet type');
+      }
+
+      // Store in database
       const dbResponse = await axios.post("http://localhost:4000/organizations", {
         orgId: orgId,
         name: newOrg.name,
         address: newOrg.address,
         contactNumber: newOrg.contact,
-        registrationNumber: newOrg.registration
+        registrationNumber: newOrg.registration,
+        walletType,
+        walletAddress,
+        transactionHash: transactionResult.transactionHash || transactionResult.signature
       });
-      console.log("Database storage result:", dbResponse.data);
-  
+
       onAdd({ ...newOrg, id: orgId });
       resetForm();
       onClose();
 
-      toast.success(`Organization ${newOrg.name} added successfully!`, {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
+      toast.success(`Organization ${newOrg.name} added successfully!`);
     } catch (error) {
       console.error("Failed to add organization:", error);
-      if (error.data) {
-        console.error("Error data:", error.data);
-      }
-      setErrors(prev => ({ ...prev, submit: `Failed to add organization: ${error.message || 'Unknown error'}` }));
-
-      toast.error(`Failed to add organization: ${error.message || 'Unknown error'}`, {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
+      setErrors(prev => ({ ...prev, submit: `Failed to add organization: ${error.message}` }));
+      toast.error(`Failed to add organization: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -121,7 +190,7 @@ const AddOrganizationPopup = ({ isOpen, onClose, onAdd }) => {
     resetForm();
     onClose();
   };
-  
+
   return (
     <Dialog isOpen={isOpen} onClose={handleClose} title="Add New Organization">
       {isLoading && (
@@ -130,10 +199,14 @@ const AddOrganizationPopup = ({ isOpen, onClose, onAdd }) => {
         </div>
       )}
       <div className="mb-4">
+        <div className="text-sm text-gray-600 mb-4">
+          Connected Wallet: {walletType} ({walletAddress?.substring(0, 6)}...{walletAddress?.substring(-4)})
+        </div>
         <label className="block text-gray-700 text-sm mb-2" htmlFor="name">Organization Name</label>
         <Input id="name" type="text" name="name" value={newOrg.name} onChange={handleChange} />
         {errors.name && <p className="text-red-500 text-xs italic mt-1">{errors.name}</p>}
       </div>
+      {/* Rest of the form fields remain the same */}
       <div className="mb-4">
         <label className="block text-gray-700 text-sm mb-2" htmlFor="address">Address</label>
         <Input id="address" type="text" name="address" value={newOrg.address} onChange={handleChange} />
