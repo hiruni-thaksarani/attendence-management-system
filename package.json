@@ -9,7 +9,14 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@thirdweb-dev/react": "^4.9.4",
+    "@thirdweb-dev/sdk": "^4.0.99",
+    "@web3auth/base": "^9.5.3",
+    "@web3auth/ethereum-provider": "^9.5.3",
+    "@web3auth/modal": "^9.5.3",
+    "@web3auth/openlogin-adapter": "^8.12.4",
     "axios": "^1.7.7",
+    "ethers": "^5.7.2",
     "lucide-react": "^0.453.0",
     "next": "14.2.15",
     "react": "^18",
